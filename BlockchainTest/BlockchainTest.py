@@ -9,6 +9,7 @@
 
 import time
 import json
+import random
 
 import crypto.hash as hashAl
 #import FromNatasha.storage as fileNat
@@ -31,7 +32,6 @@ class Block:
         self.hash = self.hashblock()
 
     def hashblock(self):
-        '''кодируем информацию блока и возвращаем хэш с пом. библиотеки Альбины'''
         # создаем хэш информации о новом блоке, включая хэш предыдущего блока и информацию в самом блоке
         hash = hashAl.hash_block(str(self.index), str(self.timestamp), str(self.data), str(self.previous_hash))
         return hash
@@ -52,30 +52,21 @@ BLOCKCHAIN.append(create_first_block()) #создали первый блок
 #таким образом, необходимо создать функцию, которая будет проверять произошло ли какое-то условие - т.е. доказательство
 
 #ИДЕЯ - брать предыдущий факт доказательства - число и находить следующее делящееся на него число
-def proofik(last_proof, blockchain): #ВОПРРОс - для доказательства передавать блок или цепочку? (скорее, цепочку)
-
-  '''inc = last_proof + 1 #переменная, которая будет использоваться для проверки работы
-
-  start_time = time.time()  #время начала
-  # Продолжаем увеличивать inc до тех пор, пока он не будет равен числу, которое
-  # делится на число, доказывающее работу предыдущего блока
-  while not (inc % last_proof == 0):
-    inc += 1
-    start_time = time.time()
-    # (мб сравнивать текущее время с временем старта)
-    # тут условие, что если нашли, прекращаем проверку, пришли к консенсусу,
-    # иначе возвращаем false?? т.к кто-то другой нашел первым
-
-  return (inc, block) # если число найдено, можно вернуть его как доказательство'''
+def proofik(last_proof, blockchain):
   # Создаем переменную, которая будет использоваться для проверки работы
   incrementor = last_proof + 1
   # Получаем время начала
   start_time = time.time()
   # Продолжаем увеличивать инкрементатор до тех пор, пока он не будет равен числу, которое
   # делится на простое число
-  while not (incrementor % 12421 == 0):
+
+  #может сделать список из простых чисел и чтобы на случайное из этого списка делилось?
+  p=[11, 31, 61, 101, 151, 211, 281, 661, 911, 1051, 1201, 1361, 1531, 1901, 2311, 2531, 3001, 3251, 3511, 4651, 5281, 6301, 6661, 7411, 9461, 9901, 12251, 13781, 14851, 15401]
+
+  i=random.randint(10)
+  while not (incrementor % p[i] == 0 and incrementor%last_proof==0):
       incrementor += 1
-      start_time = time.time()
+      '''start_time = time.time()
       # Каждые 60сек проверяем, нашла ли нода подтверждение работы
       if (int((time.time() - start_time) % 60) == 0):
           # Если нашла - прекращаем проверку
@@ -83,11 +74,11 @@ def proofik(last_proof, blockchain): #ВОПРРОс - для доказател
           if new_blockchain != False:
               # (False:другая нода первая нашла подтверждение работы)
               return (False, new_blockchain)
-  # Как только число найдено, можно вернуть его как доказательство
+  # Как только число найдено, можно вернуть его как доказательство'''
   return (incrementor, blockchain)
 
 
-def consensus(blockchain):
+'''def consensus(blockchain):
     # Если наша цепочка не самая длинная, то мы сохраняем самую длинную цепочку
     # Если самая длинная цепочка не наша, делаем ее самой длинной
     # Ищем подтверждение
@@ -122,7 +113,7 @@ def find_new_chains():
             if validated == True:
                 # добавляем ее в наш список
                 other_chains.append(block)
-    return other_chains
+    return other_chains'''
 
 #дальше уже должна быть функция майнинга
 #НЕОБХОДИМО ПРОВЕРИТЬ ДОКАЗАТЕЛЬСТВО РАБОТЫ, ЗАТЕМ ВАЛИДНОСТЬ И ЗАТЕМ ДОБАВЛЯЮ В СЛОВАРИК json
@@ -138,6 +129,11 @@ def mine(blockchain, pending_transactions):
         #  доказательство работы в текущем блоке
         # ждем пока новое подтверждение не будет найдено
         proof = proofik(last_proof, BLOCKCHAIN)
+        # проверить валидность
+        block=FileNat.last()
+        #validated = hashAl.validate_blockchein("file_path", str(block.hash), str(block.index), str(block.timestamp),
+         #                                      str(block.data), str(block.previous_hash))
+       # if validated!=False:
         # доказательство не нашлось, начинаем майнить опять
         if proof[0] == False:
             # обновляем блокчейн и сохраняемся в файл
@@ -168,16 +164,18 @@ def mine(blockchain, pending_transactions):
             # опустошаем списов
             PENDING_TRANSACTIONS = []
             # создаем новый блок
-            mined_block = Block(new_block_index, new_block_timestamp, new_block_data,
+            validated = hashAl.validate_blockchein("file_path", str(last_block.hash), str(new_block_index), str(new_block_timestamp),
+                                                  str(new_block_data), str(last_block.hash))
+            if validated!=False:
+              mined_block = Block(new_block_index, new_block_timestamp, new_block_data,
                                 last_block_hash)
-            BLOCKCHAIN.append(mined_block)
+              BLOCKCHAIN.append(mined_block)
 
-            print({
+              print({
                 "index": new_block_index,
                 "timestamp": str(new_block_timestamp),
                 "data": new_block_data,
                 "hash": last_block_hash
-            })
-            ToJSONFile.insert(BLOCKCHAIN)
-
+              })
+              ToJSONFile.insert(mined_block)
 
